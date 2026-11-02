@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RiskLens · Credit Risk Assessment</title>
+  <meta name="description" content="Instant loan default risk assessment powered by machine learning." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <header class="topbar reveal" style="--d:0">
+    <div class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      </span>
+      <span class="brand-name">RiskLens</span>
+    </div>
+    <div class="status" id="status-pill" data-state="ready"><span class="dot"></span><span id="status-text">Model ready</span></div>
+  </header>
+
+  <main class="container">
+    <section class="hero reveal" style="--d:1">
+      <p class="eyebrow">Credit risk model</p>
+      <h1>Know the risk <span class="gradient-text">before you lend.</span></h1>
+      <p class="lead">Enter an application and get a default probability, a clear classification and the threshold behind it in seconds.</p>
+    </section>
+
+    <div class="layout">
+      <!-- FORM -->
+      <form id="loan-form" class="card form-card reveal spotlight" style="--d:2" novalidate autocomplete="off">
+        <div class="presets">
+          <span class="presets-label">Try an example</span>
+          <button type="button" class="chip-btn" data-preset="low">Low-risk profile</button>
+          <button type="button" class="chip-btn" data-preset="high">High-risk profile</button>
+          <button type="button" class="chip-btn ghost" id="reset-btn">Clear</button>
+        </div>
+
+        <fieldset class="section">
+          <legend><span class="step">1</span>Applicant</legend>
+          <div class="fields two">
+            <label class="field">
+              <span class="label">Age</span>
+              <div class="input-wrap"><input type="number" name="person_age" min="18" max="100" step="1" placeholder="e.g. 28" required /><span class="suffix">yrs</span></div>
+            </label>
+            <label class="field">
+              <span class="label">Annual income</span>
+              <div class="input-wrap"><span class="prefix">$</span><input type="number" name="person_income" min="1" step="any" placeholder="e.g. 60000" required /></div>
+            </label>
+            <label class="field">
+              <span class="label">Employment length</span>
+              <div class="input-wrap"><input type="number" name="person_emp_length" min="0" max="60" step="any" placeholder="e.g. 4" required /><span class="suffix">yrs</span></div>
+            </label>
+            <div class="field">
+              <span class="label">Home ownership</span>
+              <div class="segmented" role="radiogroup" aria-label="Home ownership">
+                <label><input type="radio" name="person_home_ownership" value="RENT" /><span>Rent</span></label>
+                <label><input type="radio" name="person_home_ownership" value="MORTGAGE" /><span>Mortgage</span></label>
+                <label><input type="radio" name="person_home_ownership" value="OWN" /><span>Own</span></label>
+                <label><input type="radio" name="person_home_ownership" value="OTHER" /><span>Other</span></label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend><span class="step">2</span>Loan</legend>
+          <div class="fields two">
+            <label class="field">
+              <span class="label">Loan amount</span>
+              <div class="input-wrap"><span class="prefix">$</span><input type="number" name="loan_amnt" min="1" step="any" placeholder="e.g. 10000" required /></div>
+            </label>
+            <label class="field">
+              <span class="label">Interest rate</span>
+              <div class="input-wrap"><input type="number" name="loan_int_rate" min="0" max="40" step="0.01" placeholder="e.g. 11.5" required /><span class="suffix">%</span></div>
+            </label>
+            <label class="field">
+              <span class="label">Loan purpose</span>
+              <div class="input-wrap select-wrap">
+                <select name="loan_intent" required>
+                  <option value="" disabled selected>Select purpose</option>
+                  <option value="PERSONAL">Personal</option>
+                  <option value="EDUCATION">Education</option>
+                  <option value="MEDICAL">Medical</option>
+                  <option value="VENTURE">Venture</option>
+                  <option value="HOMEIMPROVEMENT">Home improvement</option>
+                  <option value="DEBTCONSOLIDATION">Debt consolidation</option>
+                </select>
+              </div>
+            </label>
+            <div class="field">
+              <span class="label">Loan as share of income <em>auto</em></span>
+              <div class="computed" id="lpi-box">
+                <span id="lpi-value">—</span>
+                <div class="bar"><div class="bar-fill" id="lpi-bar"></div></div>
+              </div>
+              <input type="hidden" name="loan_percent_income" />
+            </div>
+            <div class="field full">
+              <span class="label">Loan grade</span>
+              <div class="grades" role="radiogroup" aria-label="Loan grade">
+                <label><input type="radio" name="loan_grade" value="A" /><span>A</span></label>
+                <label><input type="radio" name="loan_grade" value="B" /><span>B</span></label>
+                <label><input type="radio" name="loan_grade" value="C" /><span>C</span></label>
+                <label><input type="radio" name="loan_grade" value="D" /><span>D</span></label>
+                <label><input type="radio" name="loan_grade" value="E" /><span>E</span></label>
+                <label><input type="radio" name="loan_grade" value="F" /><span>F</span></label>
+                <label><input type="radio" name="loan_grade" value="G" /><span>G</span></label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend><span class="step">3</span>Credit history</legend>
+          <div class="fields two">
+            <label class="field">
+              <span class="label">Credit history length</span>
+              <div class="input-wrap"><input type="number" name="cb_person_cred_hist_length" min="0" max="80" step="1" placeholder="e.g. 6" required /><span class="suffix">yrs</span></div>
+            </label>
+            <div class="field">
+              <span class="label">Previous default on file</span>
+              <div class="segmented" role="radiogroup" aria-label="Previous default">
+                <label><input type="radio" name="cb_person_default_on_file" value="N" /><span>No</span></label>
+                <label><input type="radio" name="cb_person_default_on_file" value="Y" /><span>Yes</span></label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="submit" id="submit-btn">
+          <span class="submit-label">Assess risk</span>
+          <span class="spinner" aria-hidden="true"></span>
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+      </form>
+
+      <!-- RESULT -->
+      <aside class="card result-card reveal spotlight" style="--d:3" id="result-card" data-state="idle" aria-live="polite">
+        <div class="result-head">
+          <h2>Assessment</h2>
+          <span class="badge" id="badge">Awaiting input</span>
+        </div>
+
+        <div class="gauge">
+          <svg viewBox="0 0 240 140" role="img" aria-label="Default probability gauge">
+            <defs>
+              <linearGradient id="gaugeGrad" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="220" y2="0">
+                <stop offset="0" stop-color="#34d399" />
+                <stop offset="0.5" stop-color="#fbbf24" />
+                <stop offset="1" stop-color="#f87171" />
+              </linearGradient>
+            </defs>
+            <path class="gauge-track" d="M 20 120 A 100 100 0 0 1 220 120" />
+            <path class="gauge-arc" id="gauge-arc" d="M 20 120 A 100 100 0 0 1 220 120" />
+            <g id="threshold-marker">
+              <line id="th-line" x1="0" y1="0" x2="0" y2="0" />
+              <circle id="th-dot" r="3.5" cx="0" cy="0" />
+            </g>
+            <text x="20" y="137" class="tick" text-anchor="middle">0</text>
+            <text x="220" y="137" class="tick" text-anchor="middle">100</text>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-value"><span id="prob-value">—</span><small>%</small></div>
+            <div class="gauge-caption">default probability</div>
+          </div>
+        </div>
+
+        <p class="verdict" id="verdict">Complete the application and run the assessment to see the result.</p>
+
+        <div class="stats">
+          <div class="stat"><span class="stat-label">Threshold</span><span class="stat-value" id="stat-threshold">—</span></div>
+          <div class="stat"><span class="stat-label">Margin</span><span class="stat-value" id="stat-margin">—</span></div>
+          <div class="stat"><span class="stat-label">Class</span><span class="stat-value" id="stat-decision">—</span></div>
+        </div>
+
+        <p class="legend"><span class="legend-line"></span> The marker on the gauge shows the model's decision threshold.</p>
+      </aside>
+    </div>
+
+    <footer class="footer reveal" style="--d:4">
+      <p>Predictions are model estimates for decision support, not a final credit decision.</p>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
